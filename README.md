@@ -22,6 +22,25 @@ Open `index.html` in your browser to play immediately.
 
 Alternatively, serve this directory with `python3 -m http.server 8080` and open `http://localhost:8080`. To play on a phone on the same network, open the computer's LAN address on port 8080. Touch controls are included.
 
+## Hosting Online
+
+The game is a static website and can run on GitHub Pages or GitLab Pages without a backend. GitHub Pages is the simplest option for this repository.
+
+### GitHub Pages
+
+1. Open the repository's [Pages settings](https://github.com/utsab4u/parking/settings/pages).
+2. Under **Build and deployment**, select **Deploy from a branch**.
+3. Select the **main** branch and **/ (root)** folder, then click **Save**.
+4. Wait for the Pages deployment to complete. Its status and published URL appear in the Pages settings.
+
+Once deployed, people can play at **https://utsab4u.github.io/parking/**. This URL is only available after Pages is enabled and deployment succeeds; these instructions do not enable hosting automatically. Subsequent pushes to `main` trigger updates to the site.
+
+Custom levels remain in each player's browser storage, not in a shared online library. Use JSON export/import to share layouts or transfer them from local play to the hosted site.
+
+### GitLab Pages
+
+GitLab Pages is also supported as a hosting platform: import or mirror this repository to GitLab, then add a `.gitlab-ci.yml` Pages job that publishes the game's HTML, CSS, and JavaScript files together, with `index.html` at the published root. No compilation is required. A GitLab deployment configuration is not currently included; use the URL shown by GitLab after a successful Pages deployment.
+
 ## Controls
 
 | Input        | Action                          |
