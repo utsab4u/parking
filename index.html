@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#152c28" />
+    <title>Small Hours — Parking Practice</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="editor.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./index.html"
+        ><span class="brand-icon">P<span>↗</span></span> SMALL HOURS<span
+          class="brand-sub"
+          >DRIVING LAB</span
+        ></a
+      ><span class="local-label"><i></i> LOCAL PLAY · NO DOWNLOAD</span>
+    </header>
+    <main>
+      <section class="heading">
+        <div>
+          <p class="eyebrow">A LITTLE SPACE. A LITTLE PATIENCE.</p>
+          <h1>Make yourself fit.</h1>
+          <p class="intro">
+            Slow down. Find your angle. Master the art of parking.
+          </p>
+        </div>
+        <div class="lesson-number">
+          <span id="lesson-count">01 / 20 LEVELS</span
+          ><strong id="lesson-name">Courtyard Welcome</strong>
+        </div>
+      </section>
+      <nav class="level-bar" aria-label="Level selection">
+        <label for="level-select">PICK YOUR MANEUVER</label>
+        <div class="level-picker">
+          <button id="previous-level" aria-label="Previous level">←</button
+          ><select id="level-select" aria-label="Parking level"></select
+          ><button id="next-level" aria-label="Next level">→</button>
+        </div>
+        <div class="level-actions">
+          <button id="edit-level">Edit this layout</button
+          ><button id="new-level" class="primary-action">
+            + Create a level
+          </button>
+        </div>
+      </nav>
+      <p id="app-message" class="app-message" role="status" hidden></p>
+      <div class="game-layout">
+        <section class="simulator" aria-label="Parking simulator">
+          <div class="scene-toolbar">
+            <span
+              ><i class="live-dot"></i> THE COURTYARD
+              <small> / TOP VIEW</small></span
+            ><button id="guide" aria-pressed="false">
+              Path assist <span>OFF</span>
+            </button>
+          </div>
+          <div class="canvas-wrap">
+            <canvas
+              id="game"
+              tabindex="0"
+              aria-label="Parking game. Use up and down to drive, left and right to steer, and space to brake."
+            ></canvas>
+            <div class="scene-note">
+              <span id="scene-mode">YOUR CAR</span
+              ><b id="scene-instruction">Follow the green space.</b>
+            </div>
+            <div id="success" class="success" hidden>
+              <span>NICELY DONE</span>
+              <h2>Right where you belong.</h2>
+              <p id="result"></p>
+              <button id="again">Try it again ↗</button>
+              <button id="success-next">Next level →</button>
+            </div>
+            <div class="compass">N<span>↑</span></div>
+          </div>
+          <div class="dashboard">
+            <div class="speed">
+              <strong id="speed">0.0</strong><span>KM/H</span>
+            </div>
+            <div class="gear">
+              <span>GEAR</span><strong id="gear">N</strong>
+            </div>
+            <div class="steering">
+              <span>STEERING <b id="angle">0°</b></span>
+              <div class="steering-track"><i id="steer-marker"></i></div>
+              <small>LEFT <span>RIGHT</span></small>
+            </div>
+            <div class="status">
+              <i id="status-dot"></i><span id="status">Ready when you are</span>
+            </div>
+          </div>
+          <div class="touch-controls" aria-label="Touch driving controls">
+            <div>
+              <button data-key="ArrowLeft" aria-label="Steer left">←</button
+              ><button data-key="ArrowRight" aria-label="Steer right">→</button>
+            </div>
+            <button data-key="Space" class="touch-brake">BRAKE</button>
+            <div>
+              <button data-key="ArrowDown" aria-label="Reverse">↓</button
+              ><button data-key="ArrowUp" aria-label="Forward">↑</button>
+            </div>
+          </div>
+        </section>
+        <aside>
+          <section class="mission">
+            <p class="eyebrow" id="mission-number">YOUR FIRST MANEUVER</p>
+            <h2 id="mission-name">Courtyard Welcome</h2>
+            <p id="mission-description">
+              Ease the mint car into the outlined bay. Finish inside the lines,
+              parallel to the curb, and come to a full stop.
+            </p>
+            <div class="specs">
+              <div>
+                <span>Parking bay</span><b id="bay-size">6.0 × 2.7 m</b>
+              </div>
+              <div><span>Your car</span><b>4.4 × 1.8 m</b></div>
+              <div>
+                <span>Difficulty</span><b id="level-difficulty">Beginner</b>
+              </div>
+            </div>
+          </section>
+          <section id="editor-panel" hidden aria-label="Level editor"></section>
+          <section class="solver-panel" aria-label="Solvability validator">
+            <p class="eyebrow">IS THERE A WAY IN?</p>
+            <button id="validate-level" class="primary-action">
+              Validate from start
+            </button>
+            <button id="cancel-solver" hidden>Cancel search</button>
+            <p id="solver-status" role="status" aria-live="polite">
+              Search for a collision-free route using this car's turning radius.
+            </p>
+            <div id="route-controls" hidden>
+              <label class="route-toggle"
+                ><input id="route-toggle" type="checkbox" /> Show
+                verified route</label
+              >
+              <label for="route-position"
+                >Inspect the maneuver <span id="route-progress">0%</span></label
+              >
+              <input
+                id="route-position"
+                type="range"
+                min="0"
+                max="0"
+                value="0"
+                aria-label="Inspect position along verified route"
+              />
+              <p class="route-legend">
+                Gold car: route preview, not your car. Steering changes happen
+                while stopped.
+              </p>
+            </div>
+            <details>
+              <summary>What does validation prove?</summary>
+              <p>
+                A found route is checked against the same car model and
+                obstacles, with extra clearance between samples. It confirms a
+                solution within this simulation. A time or search limit means
+                <b>inconclusive</b>, never impossible. Either parking direction
+                is accepted.
+              </p>
+            </details>
+          </section>
+          <section class="controls">
+            <p class="eyebrow">YOU’RE IN THE DRIVER’S SEAT</p>
+            <div class="control-row">
+              <span><kbd>↑</kbd><kbd>↓</kbd></span
+              ><span>Forward / reverse</span>
+            </div>
+            <div class="control-row">
+              <span><kbd>←</kbd><kbd>→</kbd></span
+              ><span>Turn the front wheels</span>
+            </div>
+            <div class="control-row">
+              <kbd class="wide">SPACE</kbd><span>Brake</span>
+            </div>
+            <p class="control-tip">
+              Hold to drive at a steady pace. Release to stop. Steering stays
+              where you leave it. Countersteer to straighten your wheels.
+            </p>
+            <button id="reset" class="reset">
+              ↺ <span>Start fresh</span><kbd>R</kbd>
+            </button>
+          </section>
+          <section class="hint">
+            <span>↗</span>
+            <div>
+              <b>Give yourself room.</b>
+              <p id="level-hint">
+                Pull alongside the car ahead of the bay, then reverse in while
+                turning toward the curb.
+              </p>
+            </div>
+          </section>
+        </aside>
+      </div>
+      <footer>
+        <span><i></i> Real dimensions. Low-speed physics. No rush.</span
+        ><span>BUILT FOR THE SMALL MANEUVERS.</span>
+      </footer>
+    </main>
+    <script src="parking-core.js"></script>
+    <script src="levels.js"></script>
+    <script src="parking-solver.js"></script>
+    <script src="level-editor.js"></script>
+    <script src="game.js"></script>
+  </body>
+</html>

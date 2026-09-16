@@ -1,0 +1,196 @@
+.parking-editor {
+  display: block;
+  min-width: 0;
+  align-self: start;
+  padding: 20px;
+  color: #20362e;
+  background: #f0f3e9;
+  border: 1px solid #d6decf;
+  border-radius: 12px;
+}
+
+aside > .parking-editor {
+  grid-column: 1 / -1;
+}
+
+.parking-editor[hidden],
+.parking-editor [hidden] {
+  display: none !important;
+}
+
+.parking-editor .editor-header h2 {
+  margin: 0 0 10px;
+  font-family: Manrope, sans-serif;
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.8px;
+}
+
+.parking-editor .eyebrow {
+  margin-bottom: 9px;
+  font-size: 9px;
+}
+
+.parking-editor .editor-header > p:last-child,
+.parking-editor .editor-help {
+  margin: 0 0 15px;
+  color: #66755f;
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.parking-editor .editor-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.parking-editor input,
+.parking-editor select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 9px 10px;
+  border: 1px solid #c6d1be;
+  border-radius: 5px;
+  background: #fcfcf9;
+  color: #20362e;
+  font: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.parking-editor input:focus-visible,
+.parking-editor select:focus-visible,
+.parking-editor button:focus-visible {
+  outline: 3px solid #9ecc57;
+  outline-offset: 2px;
+}
+
+.parking-editor input[aria-invalid="true"] {
+  border-color: #a04d35;
+  background: #fff6f0;
+}
+
+.parking-editor .editor-grid,
+.parking-editor .editor-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 10px;
+}
+
+.parking-editor .editor-actions {
+  gap: 8px;
+}
+
+.parking-editor .editor-wide {
+  grid-column: 1 / -1;
+}
+
+.parking-editor button {
+  min-height: 42px;
+  padding: 9px 8px;
+  border: 1px solid #c6d1be;
+  border-radius: 6px;
+  background: #fbfcf7;
+  color: #304d3c;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.parking-editor button.editor-primary {
+  background: #294936;
+  border-color: #294936;
+  color: #edf6df;
+}
+
+.parking-editor button[data-action="delete"] {
+  color: #8b503c;
+}
+
+.parking-editor :disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.parking-editor button:disabled:hover {
+  filter: none;
+}
+
+.parking-editor .editor-validation {
+  margin: 16px 0;
+  padding: 10px 12px;
+  border-left: 3px solid #90a66f;
+  background: #e4ecd9;
+  font-size: 11px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.parking-editor .editor-validation.is-error {
+  border-color: #b07851;
+  background: #f6eadb;
+  color: #80472e;
+}
+
+.parking-editor .editor-validation ul {
+  margin: 0;
+  padding-left: 15px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.parking-editor .editor-validation li + li {
+  margin-top: 5px;
+}
+
+.parking-editor .editor-message {
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.parking-editor .editor-message:empty {
+  display: none;
+}
+
+.parking-editor .editor-message.is-error {
+  color: #8b422e;
+}
+
+.parking-editor > .editor-help:last-child {
+  margin: 12px 0 0;
+}
+
+.parking-editor-canvas {
+  cursor: grab;
+  touch-action: none;
+}
+
+.parking-editor-canvas:active {
+  cursor: grabbing;
+}
+
+@media (max-width: 760px) {
+  .parking-editor {
+    width: 100%;
+    padding: 18px;
+  }
+
+  .parking-editor input,
+  .parking-editor select {
+    font-size: 16px;
+  }
+
+  .parking-editor button {
+    min-height: 44px;
+    font-size: 12px;
+  }
+}

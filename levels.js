@@ -1,0 +1,323 @@
+/* World coordinates are meters; headings are radians measured from +X. */
+(function () {
+  "use strict";
+
+  const PI = Math.PI;
+  const bounds = { minX: 1.45, maxX: 28.55, minY: 3.55, maxY: 18.25 };
+  const start = (x, y, angle = 0) => ({ x, y, angle });
+  const bay = (x, y, angle = 0, length = 5.8, width = 2.8) => ({
+    x,
+    y,
+    angle,
+    length,
+    width,
+  });
+  const car = (id, x, y, angle = 0, color = "#65839b") => ({
+    id,
+    kind: "car",
+    x,
+    y,
+    angle,
+    length: 4.4,
+    width: 1.85,
+    color,
+  });
+  const block = (id, x, y, length, width, angle = 0) => ({
+    id,
+    kind: "block",
+    x,
+    y,
+    angle,
+    length,
+    width,
+    color: "#a99880",
+  });
+
+  window.PARKING_LEVELS = [
+    {
+      id: "level-01",
+      name: "Courtyard Welcome",
+      difficulty: "beginner",
+      description: "Park in the open parallel bay along the upper row.",
+      hint: "Use the wide middle aisle to line up, then straighten inside the bay.",
+      start: start(11.2, 10.1),
+      bay: bay(14, 5.15, 0, 6, 2.7),
+      obstacles: [
+        car("upper-left", 8.45, 5.15),
+        car("upper-right", 19.55, 5.15),
+        car("lower-left", 7.7, 16.6, PI),
+        car("lower-right", 21.4, 16.6, PI),
+      ],
+    },
+    {
+      id: "level-02",
+      name: "Straight Ahead",
+      difficulty: "beginner",
+      description: "Drive straight into the bay beyond the two guide islands.",
+      hint: "Stay centered between the islands and brake before the far end.",
+      start: start(6, 10),
+      bay: bay(23, 10, 0, 6.2, 3),
+      obstacles: [
+        block("upper-guide", 15, 6.2, 6, 1.4),
+        block("lower-guide", 15, 13.8, 6, 1.4),
+      ],
+    },
+    {
+      id: "level-03",
+      name: "First Right Angle",
+      difficulty: "beginner",
+      description: "Turn upward into the broad perpendicular bay.",
+      hint: "Begin the turn in the middle aisle, not beside the parked car.",
+      start: start(6, 12),
+      bay: bay(18, 7, -PI / 2, 5.8, 3.2),
+      obstacles: [
+        car("neighbor", 23, 7, -PI / 2),
+        block("corner", 5, 5, 4, 1.5),
+      ],
+    },
+    {
+      id: "level-04",
+      name: "Diagonal Invitation",
+      difficulty: "beginner",
+      description: "Follow the diagonal heading into the angled bay.",
+      hint: "Set the shallow steering angle early, then hold forward to drive straight into place.",
+      start: start(6, 13),
+      bay: bay(20, 8, -PI / 6, 6, 3),
+      obstacles: [
+        car("diagonal-neighbor", 25, 11.5, -PI / 6),
+        block("upper-island", 9, 5, 5, 1.5),
+      ],
+    },
+    {
+      id: "level-05",
+      name: "Reverse Basics",
+      difficulty: "beginner",
+      description:
+        "Back straight into the bay while keeping your original heading.",
+      hint: "The bay is behind you; reverse slowly without adding unnecessary steering.",
+      start: start(18, 10),
+      bay: bay(7, 10, 0, 6, 3),
+      obstacles: [car("upper-marker", 7, 5.3), car("lower-marker", 7, 16.5)],
+    },
+    {
+      id: "level-06",
+      name: "Lower Row Sweep",
+      difficulty: "beginner",
+      description: "Sweep downward into a perpendicular bay in the lower row.",
+      hint: "Leave room for a broad turn before approaching the lower boundary.",
+      start: start(6, 8),
+      bay: bay(18, 14.7, PI / 2, 5.8, 3.1),
+      obstacles: [
+        car("left-neighbor", 13.5, 14.7, PI / 2),
+        car("right-neighbor", 23, 14.7, PI / 2),
+      ],
+    },
+    {
+      id: "level-07",
+      name: "Offset Alignment",
+      difficulty: "beginner",
+      description:
+        "Shift across the open apron into the offset horizontal bay.",
+      hint: "Make a gentle S-shaped approach and finish with all four wheels straight.",
+      start: start(6, 14.5),
+      bay: bay(23, 8, 0, 6, 2.9),
+      obstacles: [
+        block("lower-planter", 23, 15.7, 6, 2),
+        car("upper-marker", 7, 5.3),
+      ],
+    },
+    {
+      id: "level-08",
+      name: "Parallel Pair",
+      difficulty: "intermediate",
+      description: "Fit into the parallel gap between two parked cars.",
+      hint: "Pull alongside the front car, then reverse into the generous gap.",
+      start: start(12, 10),
+      bay: bay(16, 5.3, 0, 5.6, 2.65),
+      obstacles: [
+        car("rear-car", 9.5, 5.3),
+        car("front-car", 22.5, 5.3),
+        block("lower-island", 12, 16.5, 10, 1.5),
+      ],
+    },
+    {
+      id: "level-09",
+      name: "Perpendicular Pocket",
+      difficulty: "intermediate",
+      description: "Enter the upright pocket between the two vertical cars.",
+      hint: "Use the full aisle for the turn; straighten before passing the neighbors.",
+      start: start(6, 12),
+      bay: bay(17, 7, -PI / 2, 5.6, 2.8),
+      obstacles: [
+        car("left-car", 12.5, 7, -PI / 2),
+        car("right-car", 21.5, 7, -PI / 2),
+        block("lower-stop", 22, 17, 8, 1),
+      ],
+    },
+    {
+      id: "level-10",
+      name: "Facing the Other Way",
+      difficulty: "intermediate",
+      description: "Park facing left in the lower parallel row.",
+      hint: "You already face the correct direction; use the open center to reach the row.",
+      start: start(23, 9, PI),
+      bay: bay(14, 16.5, PI, 5.8, 2.7),
+      obstacles: [
+        car("left-car", 7.5, 16.5, PI),
+        car("right-car", 20.5, 16.5, PI),
+        block("upper-island", 15, 5, 8, 1.5),
+      ],
+    },
+    {
+      id: "level-11",
+      name: "Chevron Row",
+      difficulty: "intermediate",
+      description: "Match the slanted bay between the angled neighbors.",
+      hint: "Approach from below-left and match the bay heading before entering the row.",
+      start: start(6, 14),
+      bay: bay(17, 7.5, -PI / 3, 5.8, 2.8),
+      obstacles: [
+        car("left-chevron", 12, 7.5, -PI / 3),
+        car("right-chevron", 22, 7.5, -PI / 3),
+        block("lower-corner", 25, 16.5, 4, 1.5),
+      ],
+    },
+    {
+      id: "level-12",
+      name: "Island Detour",
+      difficulty: "intermediate",
+      description: "Go around the central island to reach the horizontal bay.",
+      hint: "Pass below the island, then use the right apron to recover your alignment.",
+      start: start(6, 8),
+      bay: bay(23, 8, 0, 5.8, 2.8),
+      obstacles: [
+        block("central-island", 14, 8, 3, 5),
+        car("upper-right", 23, 4.8),
+        car("lower-left", 6, 16.8),
+      ],
+    },
+    {
+      id: "level-13",
+      name: "Back Into the Row",
+      difficulty: "intermediate",
+      description: "Reverse into the lower perpendicular bay, facing upward.",
+      hint: "Set up above the bay; reverse with small corrections between the neighbors.",
+      start: start(17, 8, -PI / 2),
+      bay: bay(17, 14.8, -PI / 2, 5.6, 2.7),
+      obstacles: [
+        car("left-neighbor", 12.5, 14.8, -PI / 2),
+        car("right-neighbor", 21.5, 14.8, -PI / 2),
+        block("left-island", 5, 10, 2, 7),
+      ],
+    },
+    {
+      id: "level-14",
+      name: "Screened Entrance",
+      difficulty: "intermediate",
+      description:
+        "Pass the end of the screen before turning upward into the bay.",
+      hint: "Drive beyond the barrier first; the open right half is your turning area.",
+      start: start(6, 14),
+      bay: bay(22, 7, -PI / 2, 5.8, 2.9),
+      obstacles: [
+        block("screen", 10, 10, 11, 1.2),
+        car("bay-neighbor", 17.5, 7, -PI / 2),
+        block("upper-left", 6, 5, 5, 1.5),
+      ],
+    },
+    {
+      id: "level-15",
+      name: "Wrong-Way Setup",
+      difficulty: "advanced",
+      description:
+        "Change your heading and park facing right in the upper gap.",
+      hint: "Use a multi-point turn in the open center before attempting the parallel entry.",
+      start: start(16, 11, PI),
+      bay: bay(15, 5.2, 0, 5.4, 2.6),
+      obstacles: [
+        car("rear-car", 8.7, 5.2),
+        car("front-car", 21.3, 5.2),
+        car("lower-left", 7, 16.7),
+        car("lower-right", 24, 16.7),
+      ],
+    },
+    {
+      id: "level-16",
+      name: "Staggered Islands",
+      difficulty: "advanced",
+      description:
+        "Thread around the staggered islands and park in the right-hand bay.",
+      hint: "Pass below the first island and above the second; reset your line in the right apron.",
+      start: start(5.5, 11),
+      bay: bay(24, 13, 0, 5.4, 2.7),
+      obstacles: [
+        block("upper-island", 10, 6.7, 2.5, 5.8),
+        block("lower-island", 17, 15.7, 2.5, 4),
+        car("upper-right", 24, 5.2),
+      ],
+    },
+    {
+      id: "level-17",
+      name: "Reverse Chevron",
+      difficulty: "advanced",
+      description:
+        "Back into the diagonal bay with your nose pointing upper-left.",
+      hint: "Set up upper-left of the bay and reverse along its diagonal centerline.",
+      start: start(9, 8, (-3 * PI) / 4),
+      bay: bay(17, 13.7, (-3 * PI) / 4, 5.6, 2.7),
+      obstacles: [
+        car("left-chevron", 12, 14.8, (-3 * PI) / 4),
+        car("right-chevron", 22, 12.5, (-3 * PI) / 4),
+        block("upper-right", 23, 5.3, 6, 2),
+      ],
+    },
+    {
+      id: "level-18",
+      name: "Sideways Cul-de-Sac",
+      difficulty: "advanced",
+      description:
+        "Enter the open-ended enclosure and park without touching its walls.",
+      hint: "Align in the open left apron before entering; reverse out to correct if needed.",
+      start: start(7, 14, PI),
+      bay: bay(22, 10, 0, 5.4, 2.7),
+      obstacles: [
+        block("upper-wall", 21, 6.5, 12, 1),
+        block("lower-wall", 21, 13.5, 12, 1),
+        block("end-wall", 27, 10, 1, 6),
+      ],
+    },
+    {
+      id: "level-19",
+      name: "Offset Reverse Pocket",
+      difficulty: "advanced",
+      description:
+        "Move across the aisle, then reverse into the upward-facing lower bay.",
+      hint: "Use the open middle-right to face upward before backing between the cars.",
+      start: start(7, 9),
+      bay: bay(20, 14.9, -PI / 2, 5.4, 2.6),
+      obstacles: [
+        car("left-neighbor", 15.7, 14.9, -PI / 2),
+        car("right-neighbor", 24.3, 14.9, -PI / 2),
+        block("upper-screen", 13, 5.2, 8, 1.5),
+        block("left-stop", 5, 15.5, 3, 2),
+      ],
+    },
+    {
+      id: "level-20",
+      name: "Courtyard Graduation",
+      difficulty: "advanced",
+      description:
+        "Round the divider, change heading, and park facing left in the upper gap.",
+      hint: "Pass below the divider and turn in the right apron; take a separate setup pass for the bay.",
+      start: start(5.5, 11),
+      bay: bay(17, 5.2, PI, 5.3, 2.55),
+      obstacles: [
+        car("left-bay-car", 10.8, 5.2, PI),
+        car("right-bay-car", 23.2, 5.2, PI),
+        block("divider", 12, 9, 5, 1.2),
+        car("lower-left", 7, 16.6),
+        car("lower-right", 23, 16.6),
+      ],
+    },
+  ].map((level) => ({ ...level, bounds: { ...bounds } }));
+})();
