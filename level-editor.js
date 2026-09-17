@@ -52,10 +52,12 @@
         <button type="button" data-action="rotate-left">Rotate left 45&deg;</button>
         <button type="button" data-action="rotate-right">Rotate right 45&deg;</button>
       </div>
-      <p class="editor-help">Click an object to select it, then rotate it in 45-degree steps. The playable car has fixed dimensions. Parked cars, blocks, and the bay can be resized. Heading 0 points right; 90 points down.</p>
+      <p class="editor-help">Click an object to select it, then rotate it in 45-degree steps. The playable car has fixed dimensions. Parked cars, blocks, humans, and the bay can be resized. Humans are static obstacles with conservative rectangular footprints. Heading 0 points right; 90 points down. Duplicate an obstacle to copy its size and heading, then drag the selected copy away from the original. The playable car and bay cannot be duplicated. Maximum 40 obstacles.</p>
       <div class="editor-actions">
         <button type="button" data-action="car">Add parked car</button>
         <button type="button" data-action="block">Add block</button>
+        <button type="button" data-action="human">Add human</button>
+        <button type="button" data-action="duplicate">Duplicate selected obstacle</button>
         <button type="button" data-action="delete" class="editor-wide">Delete selected obstacle</button>
       </div>
       <div class="editor-validation" aria-live="polite" aria-atomic="true"></div>
@@ -140,8 +142,15 @@
           "Layout geometry is valid. Use Validate from start to check for a safe route.";
       }
       buttons.play.disabled = buttons.save.disabled = errors.length > 0;
-      buttons.car.disabled = buttons.block.disabled =
-        draft.obstacles.length >= 40;
+      buttons.car.disabled =
+        buttons.block.disabled =
+        buttons.human.disabled =
+          draft.obstacles.length >= 40;
+      buttons.duplicate.disabled =
+        selected === "start" ||
+        selected === "bay" ||
+        draft.obstacles.length >= 40 ||
+        inputErrors.size > 0;
       return errors.length === 0;
     }
 
@@ -155,7 +164,7 @@
         ["bay", "Parking bay"],
         ...draft.obstacles.map((obstacle, index) => [
           obstacle.id,
-          `${index + 1}. ${obstacle.kind === "car" ? "Parked car" : "Block"}`,
+          `${index + 1}. ${obstacle.kind === "car" ? "Parked car" : obstacle.kind === "human" ? "Human" : "Block"}`,
         ]),
       ];
       for (const [value, label] of options) {
@@ -275,23 +284,53 @@
             Math.PI) /
           180;
         changed(true);
-      } else if (action === "car" || action === "block") {
+      } else if (["car", "block", "human", "duplicate"].includes(action)) {
         if (draft.obstacles.length >= 40) return;
+        if (
+          action === "duplicate" &&
+          (selected === "start" || selected === "bay" || inputErrors.size > 0)
+        )
+          return;
+        endDrag();
+        const obstacle =
+          action === "duplicate"
+            ? clone(selectedObject())
+            : {
+                kind: action,
+                x: 15,
+                y: 11,
+                angle: 0,
+                length:
+                  action === "car"
+                    ? physics.constants.length
+                    : action === "human"
+                      ? 0.7
+                      : 3,
+                width:
+                  action === "car"
+                    ? physics.constants.carWidth
+                    : action === "human"
+                      ? 0.7
+                      : 1.5,
+                color:
+                  action === "car"
+                    ? "#65839b"
+                    : action === "human"
+                      ? "#d89a66"
+                      : "#a99880",
+              };
         let number = 1;
         while (draft.obstacles.some((body) => body.id === `obstacle-${number}`))
           number++;
         selected = `obstacle-${number}`;
         draft.obstacles.push({
+          ...obstacle,
           id: selected,
-          kind: action,
-          x: 15,
-          y: 11,
-          angle: 0,
-          length: action === "car" ? physics.constants.length : 3,
-          width: action === "car" ? physics.constants.carWidth : 1.5,
-          color: action === "car" ? "#65839b" : "#a99880",
         });
         changed(true);
+        if (action === "duplicate") {
+          feedback("Copy is selected. Drag it away from the original.");
+        }
       } else if (
         action === "delete" &&
         selected !== "start" &&
@@ -362,10 +401,7 @@
         const pose = (body) => ({
           x: body.x,
           y: body.y,
-          angle:
-            (degrees(((body.angle % (2 * Math.PI)) * 180) / Math.PI) *
-              Math.PI) /
-            180,
+          angle: body.angle,
         });
         const shape = (body) => ({
           ...pose(body),

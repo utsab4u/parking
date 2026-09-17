@@ -32,6 +32,16 @@
     width,
     color: "#a99880",
   });
+  const human = (id, x, y, angle = 0) => ({
+    id,
+    kind: "human",
+    x,
+    y,
+    angle,
+    length: 0.7,
+    width: 0.7,
+    color: "#d89a66",
+  });
 
   window.PARKING_LEVELS = [
     {
@@ -39,7 +49,7 @@
       name: "Courtyard Welcome",
       difficulty: "beginner",
       description: "Park in the open parallel bay along the upper row.",
-      hint: "Use the wide middle aisle to line up, then straighten inside the bay.",
+      hint: "Use the wide middle aisle to line up, then straighten inside the bay. Leave clearance around the people beside the aisle.",
       start: start(11.2, 10.1),
       bay: bay(14, 5.15, 0, 6, 2.7),
       obstacles: [
@@ -47,6 +57,8 @@
         car("upper-right", 19.55, 5.15),
         car("lower-left", 7.7, 16.6, PI),
         car("lower-right", 21.4, 16.6, PI),
+        human("left-person", 5, 12.5),
+        human("right-person", 24, 9, PI),
       ],
     },
     {
@@ -86,6 +98,7 @@
       obstacles: [
         car("diagonal-neighbor", 25, 11.5, -PI / 6),
         block("upper-island", 9, 5, 5, 1.5),
+        human("island-person", 13, 6.8, PI / 2),
       ],
     },
     {
@@ -138,6 +151,7 @@
         car("rear-car", 9.5, 5.3),
         car("front-car", 22.5, 5.3),
         block("lower-island", 12, 16.5, 10, 1.5),
+        human("aisle-person", 25.5, 12, PI),
       ],
     },
     {
@@ -194,6 +208,7 @@
         block("central-island", 14, 8, 3, 5),
         car("upper-right", 23, 4.8),
         car("lower-left", 6, 16.8),
+        human("island-person", 16.5, 6, PI / 2),
       ],
     },
     {
@@ -269,6 +284,7 @@
         car("left-chevron", 12, 14.8, (-3 * PI) / 4),
         car("right-chevron", 22, 12.5, (-3 * PI) / 4),
         block("upper-right", 23, 5.3, 6, 2),
+        human("apron-person", 6, 15, -PI / 2),
       ],
     },
     {

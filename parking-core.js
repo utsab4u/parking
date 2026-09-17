@@ -211,9 +211,9 @@
           else validObstacles = false;
           if (
             !object(obstacle) ||
-            (obstacle.kind !== "car" && obstacle.kind !== "block")
+            !["car", "block", "human"].includes(obstacle.kind)
           ) {
-            errors.push(`Obstacle ${i + 1} kind must be car or block.`);
+            errors.push(`Obstacle ${i + 1} kind must be car, block, or human.`);
           }
         }
       }

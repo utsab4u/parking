@@ -7,7 +7,8 @@ A standalone, top-down parking simulator. Open `index.html` directly in a modern
 - 20 parking challenges with parallel, perpendicular, angled, and obstacle-based layouts.
 - Low-speed car physics with constant-speed forward/reverse driving and persistent steering.
 - Keyboard and touch controls, with guide overlays off by default.
-- A drag-and-drop level editor with 45-degree rotation controls, local saves, and JSON import/export.
+- A drag-and-drop level editor with obstacle duplication, human obstacles, 45-degree rotation controls, local saves, and JSON import/export.
+- Helicopter towing for parked cars, with a five-minute penalty per car and a visible attempt timer.
 - A collision-aware route solver that can confirm a solution without claiming that unsuccessful searches prove impossibility.
 - Plain HTML, CSS, and JavaScript with no runtime packages or build tools required.
 
@@ -63,19 +64,31 @@ Park the mint car entirely inside the green bay, within 8 degrees of its heading
 
 All 20 built-in layouts have been checked with the included solver, which found collision-free routes for each.
 
+Levels **1, 4, 8, 12, and 17** include stationary human obstacles; the other levels do not. Level 1 has two people beside the aisle. Contact stops your car and makes the person display an angry speech bubble saying `Arey Prateek!!!`. The bubble fades out 2.5 seconds after the last contact; the person remains stationary. Resetting or changing layouts clears the reaction.
+
 ## Level Editor
 
 Choose **Create a level** for an empty lot, or **Edit this layout** to make a copy of a built-in level. Editing a custom level retains its save identity.
 
-1. Select the starting car, parking bay, parked car, or block using the object selector or canvas.
+1. Select the starting car, parking bay, parked car, block, or human using the object selector or canvas.
 2. Drag objects on the lot, or enter precise X/Y coordinates, heading, length, and width. Click a car or other object, then use **Rotate left 45°** or **Rotate right 45°** to change its orientation in 45-degree steps. Dragging snaps to 0.1 m. Heading 0 points right, 90 points down, and angles are entered in degrees. The playable car's dimensions stay fixed; obstacles and the bay can be resized.
-3. Add parked cars or blocks, or delete the selected obstacle. There is a 40-obstacle limit. Overlapping blocks can form continuous walls.
+3. Add parked cars, blocks, or humans, or delete the selected obstacle. **Duplicate selected obstacle** makes an independent copy at the same position, preserving its exact orientation, size, and color. The copy is selected: drag it away from the original or enter new coordinates. The start car and bay cannot be duplicated. There is a 40-obstacle limit, including copies. Overlapping blocks can form continuous walls.
 4. Fix the inline geometry errors, then use **Validate from start** to look for a safe route. A geometrically valid layout is not necessarily solvable.
 5. Choose **Play layout** to try the draft, **Save locally** to keep it in this browser's level selector, or **Export JSON** for a portable backup. Playing does not automatically save.
 
 **Import JSON** opens an exported level as a draft. Imports are checked before use, limited to 100 KB, and require finite coordinates, valid dimensions, bounded objects, valid metadata, and hex obstacle colors. Invalid drafts may be exported for later editing, but cannot be played or saved until corrected.
 
+Humans are stationary obstacles, initially occupying a conservative 0.7 x 0.7 m rectangular footprint. They can be moved, rotated, resized, duplicated, saved, and exported like other obstacles. Both driving collisions and the route solver respect their footprints; they do not walk or move out of the way.
+
 Custom levels are stored under `small-hours.custom-levels.v1` in `localStorage`, with a maximum of 50 saved layouts. Storage for `file://` URLs varies by browser and can be restricted; different HTTP origins have separate storage. Export JSON before moving the app, switching browsers, or clearing browser data. Storage failures are shown rather than reported as successful saves. **Cancel** discards unsaved edits and returns to the previous layout; it does not undo an explicit save.
+
+## Helicopter Towing
+
+During play, choose **Tow a car (+5:00)** below the dashboard. Select a numbered parked car on the canvas or from the dropdown, then choose **Confirm tow (+5:00)**. A helicopter flies in, picks up that car, and carries it off the lot. Only parked cars can be towed, not the playable car, blocks, or humans. Escape or **Cancel tow selection** cancels before dispatch with no charge.
+
+Each confirmed tow immediately adds exactly 300 seconds to the attempt time. The normal clock also runs during the six-second animation; driving is paused until the helicopter leaves. Selecting a target pauses gameplay and the clock. The timer shows accumulated tow penalties, and the finish result includes the tow count and penalty. Reduced-motion preferences replace the flight and spinning rotors with a stationary, fading pickup.
+
+Removal applies only to the current attempt. **Start fresh**, restarting, changing levels, or entering the editor restores the original cars and clears penalties. Saved levels and built-in layouts are never modified by towing. Resetting or switching layouts during the animation safely cancels it. Validation is unavailable during tow selection or flight; afterward it checks the remaining obstacles and labels successful routes as "after towing."
 
 ## Solvability Validation
 
@@ -111,4 +124,4 @@ The simulator uses a fixed 120 Hz kinematic bicycle model with a 2.65 m wheelbas
 
 This model is designed for low-speed parking practice, not high-speed tire dynamics. Collisions stop the vehicle rather than simulating deformation or impact forces. The overhead camera and path preview are practice aids, not a substitute for real driving instruction.
 
-Files: `index.html` (interface), `style.css` and `editor.css` (responsive design), `game.js` (gameplay, rendering, and level management), `levels.js` (built-in layouts), `parking-core.js` (shared physics), `parking-solver.js` (route search), and `level-editor.js` (custom layout editor). No application data leaves the browser. The optional font stylesheet is the only external request.
+Files: `index.html` (interface), `style.css` and `editor.css` (responsive design), `game.js` (gameplay, rendering, and level management), `helicopter.js` (tow animation), `levels.js` (built-in layouts), `parking-core.js` (shared physics), `parking-solver.js` (route search), and `level-editor.js` (custom layout editor). No application data leaves the browser. The optional font stylesheet is the only external request.

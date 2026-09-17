@@ -28,8 +28,14 @@
     editor,
     beforeEdit,
     searchController = null,
-    solution = null;
-  const collision = (body) => physics.collision(body, activeLevel);
+    solution = null,
+    attemptLevel,
+    selectingTow = false,
+    towTarget = null,
+    towMission = null,
+    towCount = 0;
+  const sceneLevel = () => (editing ? activeLevel : attemptLevel);
+  const collision = (body) => physics.collision(body, sceneLevel());
   try {
     const stored = JSON.parse(localStorage.getItem(storageKey) || "[]");
     if (Array.isArray(stored))
@@ -49,6 +55,7 @@
     );
   }
   const keys = new Set();
+  const humanReactions = new Map();
   let car,
     elapsed,
     contacts,
@@ -63,6 +70,88 @@
     viewWidth = 0,
     viewHeight = 0;
   const clamp = (v, low, high) => Math.max(low, Math.min(high, v));
+  const formatTime = (seconds) =>
+    `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+  const toWorld = (clientX, clientY) => {
+    const bounds = canvas.getBoundingClientRect();
+    return {
+      x: (clientX - bounds.left - offsetX) / scale,
+      y: (clientY - bounds.top - offsetY) / scale,
+    };
+  };
+
+  function updateTowUI() {
+    const cars = sceneLevel().obstacles.filter((body) => body.kind === "car");
+    $("tow").disabled = editing || won || Boolean(towMission) || !cars.length;
+    $("tow").textContent = towMission
+      ? "Helicopter at work..."
+      : selectingTow
+        ? "Cancel tow selection"
+        : "Tow a car (+5:00)";
+    $("tow").setAttribute(
+      "aria-expanded",
+      String(selectingTow || Boolean(towMission)),
+    );
+    $("tow-panel").hidden = !selectingTow && !towMission;
+    $("tow-choices").hidden = !selectingTow;
+    $("tow-message").textContent = towMission
+      ? "Helicopter dispatched. +5:00 penalty added. Driving resumes after pickup."
+      : "Select a highlighted parked car on the lot or from the list, then confirm. Escape cancels without a penalty.";
+    const select = $("tow-target");
+    select.replaceChildren(new Option("Choose a parked car", ""));
+    cars.forEach((body, index) =>
+      select.add(
+        new Option(
+          `Car ${index + 1} (${body.x.toFixed(1)}, ${body.y.toFixed(1)} m)`,
+          String(index),
+        ),
+      ),
+    );
+    select.value = towTarget ? String(cars.indexOf(towTarget)) : "";
+    $("dispatch-tow").disabled = !towTarget || !selectingTow;
+    $("validate-level").disabled =
+      Boolean(searchController || selectingTow || towMission) ||
+      (editing && !editor.isValid());
+    canvas.classList.toggle("tow-selecting", selectingTow);
+    document.querySelectorAll("[data-key]").forEach((button) => {
+      button.disabled = editing || selectingTow || Boolean(towMission);
+    });
+  }
+
+  function toggleTowSelection() {
+    if (editing || won || towMission) return;
+    if (
+      !selectingTow &&
+      !attemptLevel.obstacles.some((body) => body.kind === "car")
+    )
+      return;
+    selectingTow = !selectingTow;
+    towTarget = null;
+    releaseControls();
+    clearValidation();
+    updateTowUI();
+    canvas.focus({ preventScroll: true });
+  }
+
+  function dispatchTow() {
+    if (!selectingTow || !towTarget || towMission || editing || won) return;
+    clearValidation();
+    releaseControls();
+    towMission = {
+      target: towTarget,
+      elapsed: 0,
+      reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)")
+        .matches,
+    };
+    selectingTow = false;
+    towTarget = null;
+    elapsed += 300;
+    towCount++;
+    started = true;
+    hold = 0;
+    updateTowUI();
+    canvas.focus({ preventScroll: true });
+  }
 
   function showMessage(message) {
     $("app-message").textContent = message;
@@ -132,6 +221,7 @@
     document.querySelectorAll("[data-key]").forEach((button) => {
       button.disabled = editing;
     });
+    updateTowUI();
   }
 
   function clearValidation() {
@@ -226,6 +316,7 @@
   }
 
   async function runValidation() {
+    if (selectingTow || towMission) return;
     if (editing && !editor.isValid()) {
       $("solver-status").textContent =
         "Fix the editor's geometry or input errors before searching.";
@@ -243,7 +334,7 @@
       "Searching forward and reverse maneuvers...";
     let progressAt = 0;
     try {
-      const result = await window.ParkingSolver.solve(activeLevel, {
+      const result = await window.ParkingSolver.solve(sceneLevel(), {
         signal: controller.signal,
         onProgress: ({ expanded }) => {
           if (
@@ -261,7 +352,7 @@
       if (result.status === "solved") {
         solution = result;
         $("solver-status").textContent =
-          `Solvable in this model. Verified ${result.distance.toFixed(1)} m route using 8 cm safety padding at samples. ${result.expanded.toLocaleString()} positions explored.`;
+          `Solvable in this model${towCount ? " after towing" : ""}. Verified ${result.distance.toFixed(1)} m route using 8 cm safety padding at samples. ${result.expanded.toLocaleString()} positions explored.`;
         $("route-controls").hidden = false;
         $("route-toggle").checked = false;
         $("route-position").max = result.path.length - 1;
@@ -293,6 +384,11 @@
 
   function reset() {
     clearValidation();
+    attemptLevel = clone(activeLevel);
+    selectingTow = false;
+    towTarget = towMission = null;
+    towCount = 0;
+    humanReactions.clear();
     car = { ...physics.createCar(activeLevel.start), color: "#b7dbbd" };
     elapsed = contacts = hold = impactTimer = 0;
     won = started = false;
@@ -301,10 +397,35 @@
       .querySelectorAll("[data-key]")
       .forEach((button) => button.classList.remove("active"));
     ui.success.hidden = true;
+    updateTowUI();
   }
 
   function step(dt) {
+    for (const [human, remaining] of humanReactions) {
+      if (remaining <= dt) humanReactions.delete(human);
+      else humanReactions.set(human, remaining - dt);
+    }
     if (won || editing || searchController) return;
+    if (towMission) {
+      const previous = towMission.elapsed;
+      towMission.elapsed += dt;
+      elapsed += dt;
+      if (
+        previous < window.ParkingHelicopter.liftAt &&
+        towMission.elapsed >= window.ParkingHelicopter.liftAt
+      ) {
+        attemptLevel.obstacles = attemptLevel.obstacles.filter(
+          (body) => body !== towMission.target,
+        );
+      }
+      if (towMission.elapsed >= window.ParkingHelicopter.duration) {
+        towMission = null;
+        releaseControls();
+        updateTowUI();
+      }
+      return;
+    }
+    if (selectingTow) return;
     impactTimer = Math.max(0, impactTimer - dt);
     const steering =
       Number(keys.has("ArrowRight")) - Number(keys.has("ArrowLeft"));
@@ -321,6 +442,11 @@
     const previous = { ...car };
     move(car, car.speed * dt);
     if (collision(car)) {
+      // Test the attempted pose before collision handling moves the car back.
+      for (const obstacle of attemptLevel.obstacles) {
+        if (obstacle.kind === "human" && physics.overlaps(car, obstacle))
+          humanReactions.set(obstacle, 2.5);
+      }
       Object.assign(car, {
         x: previous.x,
         y: previous.y,
@@ -337,9 +463,10 @@
     if (hold > 1.2) {
       won = true;
       car.speed = 0;
-      ui.result.textContent = `${Math.floor(elapsed / 60)}:${String(Math.floor(elapsed % 60)).padStart(2, "0")} elapsed · ${contacts} contact${contacts === 1 ? "" : "s"} · Parked with care.`;
+      ui.result.textContent = `${formatTime(elapsed)} elapsed · ${contacts} contact${contacts === 1 ? "" : "s"}${towCount ? ` · ${towCount} tow${towCount === 1 ? "" : "s"} (+${formatTime(towCount * 300)})` : ""} · Parked with care.`;
       ui.success.hidden = false;
       keys.clear();
+      updateTowUI();
     }
   }
 
@@ -450,7 +577,7 @@
   }
 
   function drawPath() {
-    if (!assist || won || editing) return;
+    if (!assist || won || editing || selectingTow || towMission) return;
     const ghost = { ...car };
     const direction = car.speed < -0.01 || keys.has("ArrowDown") ? -1 : 1;
     ctx.save();
@@ -483,6 +610,26 @@
     ctx.save();
     ctx.translate(body.x, body.y);
     ctx.rotate(body.angle);
+    if (body.kind === "human") {
+      ctx.scale(body.length, body.width);
+      // A static top-down person inside the same rectangular collision footprint.
+      rect(-0.5, -0.5, 1, 1, "#eed7af28", 0.18);
+      rect(-0.38, -0.29, 0.4, 0.19, "#263e38", 0.08);
+      rect(-0.38, 0.1, 0.4, 0.19, "#263e38", 0.08);
+      rect(-0.23, -0.44, 0.42, 0.88, body.color || "#d89a66", 0.18);
+      rect(0.09, -0.44, 0.23, 0.18, "#e6bc91", 0.08);
+      rect(0.09, 0.26, 0.23, 0.18, "#e6bc91", 0.08);
+      ctx.fillStyle = "#e6bc91";
+      ctx.beginPath();
+      ctx.arc(0.12, 0, 0.24, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#493e34";
+      ctx.beginPath();
+      ctx.arc(0.07, 0, 0.2, Math.PI / 2, Math.PI * 1.5);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
     rect(
       -body.length / 2 + 0.1,
       -body.width / 2 + 0.1,
@@ -503,6 +650,46 @@
     ctx.lineWidth = 0.05;
     ctx.strokeRect(-body.length / 2, -body.width / 2, body.length, body.width);
     ctx.restore();
+  }
+
+  function drawHumanReactions() {
+    const unit = Math.max(1, 20 / scale);
+    const w = 4.6 * unit,
+      h = 1.3 * unit,
+      radius = 0.3 * unit;
+    for (const [human, remaining] of humanReactions) {
+      const top =
+        human.y -
+        (Math.abs(Math.sin(human.angle)) * human.length +
+          Math.abs(Math.cos(human.angle)) * human.width) /
+          2;
+      const x = clamp(human.x, w / 2 + 0.1, config.width - w / 2 - 0.1);
+      const y = Math.max(0.1, top - h - 0.35 * unit);
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, remaining / 0.6);
+      ctx.translate(x, y);
+      ctx.fillStyle = "#fff0d5";
+      ctx.strokeStyle = "#b75439";
+      ctx.lineWidth = 0.055 * unit;
+      ctx.beginPath();
+      ctx.moveTo(-w / 2 + radius, 0);
+      ctx.lineTo(w / 2 - radius, 0);
+      ctx.quadraticCurveTo(w / 2, 0, w / 2, radius);
+      ctx.lineTo(w / 2, h - radius);
+      ctx.quadraticCurveTo(w / 2, h, w / 2 - radius, h);
+      ctx.lineTo(0.25 * unit, h);
+      ctx.lineTo(clamp(human.x - x, -w / 2, w / 2), h + 0.3 * unit);
+      ctx.lineTo(-0.25 * unit, h);
+      ctx.lineTo(-w / 2 + radius, h);
+      ctx.quadraticCurveTo(-w / 2, h, -w / 2, h - radius);
+      ctx.lineTo(-w / 2, radius);
+      ctx.quadraticCurveTo(-w / 2, 0, -w / 2 + radius, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      text("Arey Prateek!!!", 0, 0.82 * unit, 0.48 * unit, "#903f2f");
+      ctx.restore();
+    }
   }
 
   function drawVerifiedRoute() {
@@ -603,7 +790,27 @@
         );
     }
     drawPath();
-    activeLevel.obstacles.forEach(drawObstacle);
+    sceneLevel().obstacles.forEach(drawObstacle);
+    if (selectingTow) {
+      sceneLevel()
+        .obstacles.filter((body) => body.kind === "car")
+        .forEach((body, index) => {
+          ctx.save();
+          ctx.translate(body.x, body.y);
+          ctx.rotate(body.angle);
+          ctx.strokeStyle = body === towTarget ? "#fff2a8" : "#f2d68f99";
+          ctx.lineWidth = body === towTarget ? 0.12 : 0.05;
+          ctx.strokeRect(
+            -body.length / 2 - 0.15,
+            -body.width / 2 - 0.15,
+            body.length + 0.3,
+            body.width + 0.3,
+          );
+          ctx.restore();
+          rect(body.x - 0.32, body.y - 0.32, 0.64, 0.64, "#f2d68f", 0.15);
+          text(String(index + 1), body.x, body.y + 0.14, 0.38, "#20362e");
+        });
+    }
     drawCar(car, true);
     drawVerifiedRoute();
     if (editing && editor?.selectedBody()) {
@@ -642,27 +849,39 @@
     tree(2.5, 19.6, 1.05);
     tree(26.8, 19.7, 1.4);
     text("THE COURTYARD", 15, 1.02, 0.27, "#dbe1c885");
+    drawHumanReactions();
+    if (towMission) window.ParkingHelicopter.draw(ctx, towMission, drawCar);
+    $("elapsed").textContent = formatTime(elapsed);
+    $("tow-penalty").textContent = towCount
+      ? `Includes +${formatTime(towCount * 300)} towing`
+      : "No tow penalties";
     ui.speed.textContent = (Math.abs(car.speed) * 3.6).toFixed(1);
     ui.gear.textContent =
       car.speed > 0.02 ? "D" : car.speed < -0.02 ? "R" : "N";
     ui.angle.textContent = `${Math.round((car.steer * 180) / Math.PI)}°`;
     ui["steer-marker"].style.left =
       `${50 + (car.steer / config.maxSteer) * 50}%`;
-    ui.status.textContent = editing
-      ? "Editing layout"
-      : searchController
-        ? "Checking route..."
-        : won
-          ? "Perfectly parked"
-          : impactTimer > 0
-            ? "Contact. Ease away."
-            : hold > 0
-              ? "Hold it there…"
-              : keys.has("Space")
-                ? "Braking"
-                : Math.abs(car.speed) > 0.08
-                  ? "Take your time"
-                  : "Ready when you are";
+    ui.status.textContent = towMission
+      ? "Helicopter towing..."
+      : selectingTow
+        ? "Select a parked car"
+        : editing
+          ? "Editing layout"
+          : searchController
+            ? "Checking route..."
+            : won
+              ? "Perfectly parked"
+              : impactTimer > 0
+                ? humanReactions.size
+                  ? "Watch out! Give people space."
+                  : "Contact. Ease away."
+                : hold > 0
+                  ? "Hold it there…"
+                  : keys.has("Space")
+                    ? "Braking"
+                    : Math.abs(car.speed) > 0.08
+                      ? "Take your time"
+                      : "Ready when you are";
     ui["status-dot"].style.background = impactTimer > 0 ? "#e5a183" : "#bfd895";
   }
 
@@ -685,6 +904,11 @@
     "Space",
   ];
   window.addEventListener("keydown", (event) => {
+    if (event.code === "Escape" && selectingTow) {
+      event.preventDefault();
+      toggleTowSelection();
+      return;
+    }
     if (
       editing ||
       event.ctrlKey ||
@@ -699,6 +923,7 @@
       return;
     if (drivingKeys.includes(event.code)) {
       event.preventDefault();
+      if (selectingTow || towMission) return;
       if (searchController) clearValidation();
       keys.add(event.code);
     }
@@ -727,7 +952,7 @@
   });
   document.querySelectorAll("[data-key]").forEach((button) => {
     button.addEventListener("pointerdown", (event) => {
-      if (editing) return;
+      if (editing || selectingTow || towMission) return;
       event.preventDefault();
       if (searchController) clearValidation();
       button.setPointerCapture(event.pointerId);
@@ -765,6 +990,32 @@
   $("success-next").addEventListener("click", () => navigateLevel(1));
   $("edit-level").addEventListener("click", () => beginEdit(false));
   $("new-level").addEventListener("click", () => beginEdit(true));
+  $("tow").addEventListener("click", toggleTowSelection);
+  $("dispatch-tow").addEventListener("click", dispatchTow);
+  $("tow-target").addEventListener("change", (event) => {
+    const cars = attemptLevel.obstacles.filter((body) => body.kind === "car");
+    towTarget =
+      event.target.value === "" ? null : cars[Number(event.target.value)];
+    updateTowUI();
+  });
+  canvas.addEventListener("pointerdown", (event) => {
+    if (!selectingTow || event.button !== 0) return;
+    const point = toWorld(event.clientX, event.clientY);
+    towTarget =
+      [...attemptLevel.obstacles].reverse().find((body) => {
+        if (body.kind !== "car") return false;
+        const dx = point.x - body.x,
+          dy = point.y - body.y;
+        const c = Math.cos(body.angle),
+          s = Math.sin(body.angle);
+        return (
+          Math.abs(dx * c + dy * s) <= body.length / 2 &&
+          Math.abs(-dx * s + dy * c) <= body.width / 2
+        );
+      }) || null;
+    event.preventDefault();
+    updateTowUI();
+  });
   $("validate-level").addEventListener("click", runValidation);
   $("cancel-solver").addEventListener("click", () => searchController?.abort());
   $("route-position").addEventListener("input", () => {
@@ -775,13 +1026,7 @@
   editor = window.ParkingEditor.create({
     canvas,
     container: $("editor-panel"),
-    toWorld: (clientX, clientY) => {
-      const bounds = canvas.getBoundingClientRect();
-      return {
-        x: (clientX - bounds.left - offsetX) / scale,
-        y: (clientY - bounds.top - offsetY) / scale,
-      };
-    },
+    toWorld,
     onChange: (draft) => {
       if (!draft.id.startsWith("custom-"))
         draft.id = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

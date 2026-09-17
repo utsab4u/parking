@@ -91,6 +91,23 @@
               <i id="status-dot"></i><span id="status">Ready when you are</span>
             </div>
           </div>
+          <div class="attempt-bar">
+            <div class="attempt-time">
+              <span>ATTEMPT TIME</span><strong id="elapsed">0:00</strong
+              ><small id="tow-penalty">No tow penalties</small>
+            </div>
+            <button id="tow" aria-expanded="false" aria-controls="tow-panel">
+              Tow a car (+5:00)
+            </button>
+          </div>
+          <div id="tow-panel" class="tow-panel" hidden>
+            <p id="tow-message" role="status"></p>
+            <div id="tow-choices">
+              <label for="tow-target">Parked car to remove</label>
+              <select id="tow-target"></select>
+              <button id="dispatch-tow" disabled>Confirm tow (+5:00)</button>
+            </div>
+          </div>
           <div class="touch-controls" aria-label="Touch driving controls">
             <div>
               <button data-key="ArrowLeft" aria-label="Steer left">←</button
@@ -133,8 +150,8 @@
             </p>
             <div id="route-controls" hidden>
               <label class="route-toggle"
-                ><input id="route-toggle" type="checkbox" /> Show
-                verified route</label
+                ><input id="route-toggle" type="checkbox" /> Show verified
+                route</label
               >
               <label for="route-position"
                 >Inspect the maneuver <span id="route-progress">0%</span></label
@@ -205,6 +222,7 @@
     <script src="levels.js"></script>
     <script src="parking-solver.js"></script>
     <script src="level-editor.js"></script>
+    <script src="helicopter.js"></script>
     <script src="game.js"></script>
   </body>
 </html>
