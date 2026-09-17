@@ -6,7 +6,7 @@
     length: 4.4,
     carWidth: 1.8,
     maxSteer: (35 * Math.PI) / 180,
-    steerRate: (48 * Math.PI) / 180,
+    steerRate: (120 * Math.PI) / 180,
     driveSpeed: 1.4,
   });
 

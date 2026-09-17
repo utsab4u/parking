@@ -62,6 +62,26 @@
               tabindex="0"
               aria-label="Parking game. Use up and down to drive, left and right to steer, and space to brake."
             ></canvas>
+            <div
+              class="canvas-actions"
+              role="group"
+              aria-label="Play area actions"
+            >
+              <button id="tow" aria-expanded="false" aria-controls="tow-panel">
+                Tow a car (+5:00)
+              </button>
+              <button id="expand-play" aria-pressed="false">Full Screen</button>
+              <div id="tow-panel" class="tow-panel" hidden>
+                <p id="tow-message" role="status"></p>
+                <div id="tow-choices">
+                  <label for="tow-target">Parked car to remove</label>
+                  <select id="tow-target"></select>
+                  <button id="dispatch-tow" disabled>
+                    Confirm tow (+5:00)
+                  </button>
+                </div>
+              </div>
+            </div>
             <div class="scene-note">
               <span id="scene-mode">YOUR CAR</span
               ><b id="scene-instruction">Follow the green space.</b>
@@ -95,17 +115,6 @@
             <div class="attempt-time">
               <span>ATTEMPT TIME</span><strong id="elapsed">0:00</strong
               ><small id="tow-penalty">No tow penalties</small>
-            </div>
-            <button id="tow" aria-expanded="false" aria-controls="tow-panel">
-              Tow a car (+5:00)
-            </button>
-          </div>
-          <div id="tow-panel" class="tow-panel" hidden>
-            <p id="tow-message" role="status"></p>
-            <div id="tow-choices">
-              <label for="tow-target">Parked car to remove</label>
-              <select id="tow-target"></select>
-              <button id="dispatch-tow" disabled>Confirm tow (+5:00)</button>
             </div>
           </div>
           <div class="touch-controls" aria-label="Touch driving controls">

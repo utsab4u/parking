@@ -21,6 +21,13 @@
   const config = { width: 30, height: 20, ...physics.constants };
   const $ = (id) => document.getElementById(id);
   const clone = (value) => JSON.parse(JSON.stringify(value));
+  const simulator = document.querySelector(".simulator");
+  const outsidePlay = document.querySelectorAll(
+    ".topbar, .heading, .level-bar, #app-message, aside, footer",
+  );
+  const priorInert = new Map();
+  let expanded = false,
+    autoExpandPending = true;
   const storageKey = "small-hours.custom-levels.v1";
   let savedLevels = [],
     activeLevel = clone(window.PARKING_LEVELS[0]);
@@ -79,6 +86,32 @@
       y: (clientY - bounds.top - offsetY) / scale,
     };
   };
+
+  function setExpanded(value) {
+    if (value === expanded || (value && editing)) return;
+    expanded = value;
+    // Manual exit stays respected until another layout is loaded.
+    autoExpandPending = false;
+    if (expanded) {
+      for (const element of outsidePlay) {
+        priorInert.set(element, element.inert);
+        element.inert = true;
+      }
+    } else {
+      releaseControls();
+      for (const [element, inert] of priorInert) element.inert = inert;
+      priorInert.clear();
+    }
+    simulator.classList.toggle("expanded-play", expanded);
+    document.body.classList.toggle("play-expanded", expanded);
+    $("expand-play").textContent = expanded
+      ? "Exit Full Screen"
+      : "Full Screen";
+    $("expand-play").setAttribute("aria-pressed", String(expanded));
+    // Keep the same touch buttons and pointer captures during automatic entry.
+    (expanded ? canvas : $("expand-play")).focus({ preventScroll: true });
+    resize();
+  }
 
   function updateTowUI() {
     const cars = sceneLevel().obstacles.filter((body) => body.kind === "car");
@@ -207,6 +240,7 @@
     $("new-level").disabled = editing;
     $("reset").disabled = editing;
     $("guide").disabled = editing;
+    $("expand-play").disabled = editing;
     document.body.classList.toggle("editing", editing);
     $("scene-mode").textContent = editing ? "LAYOUT EDITOR" : "YOUR CAR";
     $("scene-instruction").textContent = editing
@@ -242,9 +276,11 @@
       showMessage(validation.errors.join(" "));
       return;
     }
+    setExpanded(false);
     editor?.close();
     editing = false;
     activeLevel = clone(level);
+    autoExpandPending = true;
     reset();
     updateLevelUI();
     canvas.focus({ preventScroll: true });
@@ -258,23 +294,13 @@
     if (next) loadLevel(next);
   }
 
-  function beginEdit(blank) {
+  function beginEdit(createCopy) {
+    setExpanded(false);
     beforeEdit = clone(activeLevel);
-    const draft = blank
-      ? {
-          name: "My parking spot",
-          difficulty: "custom",
-          description: "Park inside your custom bay.",
-          hint: "Try different approaches and validate the layout.",
-          bounds: { minX: 1.45, maxX: 28.55, minY: 3.55, maxY: 18.25 },
-          start: { x: 7, y: 11, angle: 0 },
-          bay: { x: 22, y: 8, angle: 0, length: 5.8, width: 2.8 },
-          obstacles: [],
-        }
-      : clone(activeLevel);
-    if (blank || !draft.id.startsWith("custom-")) {
+    const draft = clone(activeLevel);
+    if (createCopy || !draft.id.startsWith("custom-")) {
       draft.id = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      if (!blank) draft.name = `${draft.name} (copy)`;
+      draft.name = `${draft.name.slice(0, 73)} (copy)`;
     }
     editing = true;
     releaseControls();
@@ -456,6 +482,7 @@
       if (impactTimer === 0) contacts++;
       impactTimer = 0.85;
     }
+    if (autoExpandPending && car.speed !== 0) setExpanded(true);
     hold =
       isParked(car, activeLevel.bay) && Math.abs(car.speed) < 0.08
         ? hold + dt
@@ -711,6 +738,7 @@
   }
 
   function render() {
+    updateCamera();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, viewWidth, viewHeight);
@@ -885,6 +913,30 @@
     ui["status-dot"].style.background = impactTimer > 0 ? "#e5a183" : "#bfd895";
   }
 
+  function updateCamera() {
+    const fit = Math.min(viewWidth / config.width, viewHeight / config.height);
+    const follow = expanded && !selectingTow && !towMission && !editing && !won;
+    scale = follow
+      ? Math.max(fit, Math.min(viewWidth / 16, viewHeight / 12))
+      : fit;
+    offsetX =
+      follow && config.width * scale > viewWidth
+        ? clamp(
+            viewWidth / 2 - car.x * scale,
+            viewWidth - config.width * scale,
+            0,
+          )
+        : (viewWidth - config.width * scale) / 2;
+    offsetY =
+      follow && config.height * scale > viewHeight
+        ? clamp(
+            viewHeight / 2 - car.y * scale,
+            viewHeight - config.height * scale,
+            0,
+          )
+        : (viewHeight - config.height * scale) / 2;
+  }
+
   function resize() {
     const bounds = canvas.getBoundingClientRect();
     viewWidth = bounds.width;
@@ -892,9 +944,7 @@
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(viewWidth * dpr);
     canvas.height = Math.round(viewHeight * dpr);
-    scale = Math.min(viewWidth / config.width, viewHeight / config.height);
-    offsetX = (viewWidth - config.width * scale) / 2;
-    offsetY = (viewHeight - config.height * scale) / 2;
+    updateCamera();
   }
   const drivingKeys = [
     "ArrowUp",
@@ -907,6 +957,11 @@
     if (event.code === "Escape" && selectingTow) {
       event.preventDefault();
       toggleTowSelection();
+      return;
+    }
+    if (event.code === "Escape" && expanded) {
+      event.preventDefault();
+      setExpanded(false);
       return;
     }
     if (
@@ -991,6 +1046,7 @@
   $("edit-level").addEventListener("click", () => beginEdit(false));
   $("new-level").addEventListener("click", () => beginEdit(true));
   $("tow").addEventListener("click", toggleTowSelection);
+  $("expand-play").addEventListener("click", () => setExpanded(!expanded));
   $("dispatch-tow").addEventListener("click", dispatchTow);
   $("tow-target").addEventListener("change", (event) => {
     const cars = attemptLevel.obstacles.filter((body) => body.kind === "car");

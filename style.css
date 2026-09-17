@@ -958,7 +958,7 @@ summary:focus-visible {
   font-size: 11px;
   color: #66755f;
 }
-.attempt-bar button,
+.canvas-actions > button,
 .tow-panel button,
 .tow-panel select {
   min-height: 44px;
@@ -971,9 +971,14 @@ summary:focus-visible {
   font-size: 12px;
 }
 .tow-panel {
-  padding: 16px 20px;
+  grid-column: 1 / -1;
+  min-height: 0;
+  max-height: min(260px, 55vh);
+  overflow: auto;
+  padding: 12px;
   background: #f5efd9;
-  border-top: 1px solid #e2d8b9;
+  border: 1px solid #e2d8b9;
+  border-radius: 8px;
   color: #555239;
 }
 .tow-panel p {
@@ -1002,4 +1007,122 @@ summary:focus-visible {
 .tow-selecting {
   cursor: crosshair;
   touch-action: none;
+}
+
+.canvas-actions {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, auto));
+  grid-template-rows: auto minmax(0, 1fr);
+  justify-content: flex-end;
+  gap: 8px;
+  width: min(380px, calc(100% - 20px));
+  max-height: calc(100% - 20px);
+  pointer-events: none;
+}
+.canvas-actions > * {
+  pointer-events: auto;
+}
+.canvas-actions > button {
+  box-shadow: 0 2px 8px #15241d40;
+  font-weight: 700;
+}
+#expand-play {
+  background: #d1e9a7;
+  color: #20362e;
+}
+.success {
+  z-index: 1;
+}
+body.play-expanded {
+  overflow: hidden;
+}
+.simulator.expanded-play {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  border-radius: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.expanded-play > * {
+  flex-shrink: 0;
+}
+.expanded-play .canvas-wrap {
+  flex: 1;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+.expanded-play canvas {
+  position: absolute;
+  inset: 0;
+}
+.expanded-play .scene-toolbar {
+  height: 36px;
+}
+.expanded-play .dashboard {
+  height: 64px;
+}
+.expanded-play .attempt-bar {
+  padding: 6px 15px;
+}
+.expanded-play .attempt-time {
+  display: flex;
+  flex-wrap: wrap;
+}
+.expanded-play .success {
+  padding-top: 64px;
+  overflow: auto;
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .expanded-play .scene-toolbar {
+    height: 30px;
+  }
+  .expanded-play .dashboard {
+    height: 42px;
+  }
+  .expanded-play .speed strong {
+    font-size: 22px;
+  }
+  .expanded-play .steering-track {
+    margin: 5px 0;
+  }
+  .expanded-play .attempt-bar {
+    padding: 2px 12px;
+  }
+  .expanded-play .attempt-time strong {
+    font-size: 16px;
+  }
+  .expanded-play .touch-controls {
+    padding: 3px 12px;
+  }
+  .expanded-play .touch-controls button {
+    height: 44px;
+  }
+  .expanded-play .scene-note,
+  .expanded-play .compass {
+    display: none;
+  }
+  .expanded-play .success {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    align-content: center;
+  }
+  .expanded-play .success h2 {
+    font-size: 20px;
+    margin: 0;
+  }
+  .expanded-play .success p,
+  .expanded-play .success button {
+    margin: 0;
+  }
 }
