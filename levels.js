@@ -63,15 +63,14 @@
     },
     {
       id: "level-02",
-      name: "Straight Ahead",
+      name: "Gentle Detour",
       difficulty: "beginner",
-      description: "Drive straight into the bay beyond the two guide islands.",
-      hint: "Stay centered between the islands and brake before the far end.",
-      start: start(6, 10),
-      bay: bay(23, 10, 0, 6.2, 3),
+      description: "Go around the planter before lining up with the open bay.",
+      hint: "Take the upper lane around the planter, then straighten for the bay.",
+      start: start(6, 12.3),
+      bay: bay(22.5, 7.2, 0, 6.2, 3),
       obstacles: [
-        block("upper-guide", 15, 6.2, 6, 1.4),
-        block("lower-guide", 15, 13.8, 6, 1.4),
+        block("center-planter", 13, 11, 2.4, 6.2),
       ],
     },
     {
@@ -103,14 +102,15 @@
     },
     {
       id: "level-05",
-      name: "Reverse Basics",
+      name: "Reverse Detour",
       difficulty: "beginner",
-      description:
-        "Back straight into the bay while keeping your original heading.",
-      hint: "The bay is behind you; reverse slowly without adding unnecessary steering.",
-      start: start(18, 10),
-      bay: bay(7, 10, 0, 6, 3),
-      obstacles: [car("upper-marker", 7, 5.3), car("lower-marker", 7, 16.5)],
+      description: "Work around the central planter, then reverse into the bay.",
+      hint: "Use the lower apron to get past the planter before setting up your reverse.",
+      start: start(19, 12.5),
+      bay: bay(7, 8, 0, 6, 3),
+      obstacles: [
+        block("center-planter", 13, 10.5, 3, 5.5),
+      ],
     },
     {
       id: "level-06",
@@ -127,16 +127,15 @@
     },
     {
       id: "level-07",
-      name: "Offset Alignment",
+      name: "First S-Turn",
       difficulty: "beginner",
-      description:
-        "Shift across the open apron into the offset horizontal bay.",
-      hint: "Make a gentle S-shaped approach and finish with all four wheels straight.",
+      description: "Weave through the staggered planters before reaching the bay.",
+      hint: "Pass below the first planter, then above the second before straightening.",
       start: start(6, 14.5),
       bay: bay(23, 8, 0, 6, 2.9),
       obstacles: [
-        block("lower-planter", 23, 15.7, 6, 2),
-        car("upper-marker", 7, 5.3),
+        block("upper-planter", 11, 8.5, 2.4, 7),
+        block("lower-planter", 17, 13.5, 2.4, 6),
       ],
     },
     {
@@ -213,16 +212,16 @@
     },
     {
       id: "level-13",
-      name: "Back Into the Row",
+      name: "Screened Reverse Row",
       difficulty: "intermediate",
-      description: "Reverse into the lower perpendicular bay, facing upward.",
-      hint: "Set up above the bay; reverse with small corrections between the neighbors.",
+      description: "Go around the screen before reversing into the lower bay.",
+      hint: "Use the right apron to get below the screen, then set up for the reverse.",
       start: start(17, 8, -PI / 2),
       bay: bay(17, 14.8, -PI / 2, 5.6, 2.7),
       obstacles: [
         car("left-neighbor", 12.5, 14.8, -PI / 2),
         car("right-neighbor", 21.5, 14.8, -PI / 2),
-        block("left-island", 5, 10, 2, 7),
+        block("entry-screen", 14, 11, 5, 1.2),
       ],
     },
     {
